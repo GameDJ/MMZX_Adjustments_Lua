@@ -4,12 +4,15 @@
 --All: Give 1 Weapon Energy to all models every 3 seconds, and refill WE completely at transervers or upon death
 --     Switch to any model using Select+[button] combinations (replaces an AR script that DraStic doesn't support)
 --X: Can switch elements with overdrive button, VERY EXPERIMENTAL!! Do not recommend
+--HX: Can airdash continuously and repeatedly while overdrive is active [planned: manipulate trajectory]
 --FX: Can perform a recoil-rod style superjump by pressing B while using Ground Breaker
 --    Can also perform a double jump by holding down while releasing a charge fireball in the air
 --    Ground Breaker now multihits vs bosses and can be performed from a lv1 charge
 --LX: Can now perform a skullcrush like Model ZX by holding down during jumpslash [planned: deals extra damage]
 --    Ice dragon can be performed from a lv1 charge and costs 2 fewer energy points
 --    Ice sled now instantly accelerates to full speed when hit
+--    Swimming no longer has a significant deceleration period at the end
+--    Infinite dashing while overdrive is active
 --PX: Can spend 1 WE to perform a MMX6 Shadow Armor-style highjump by pressing Up and B
 --    Can throw kunai straight forward by pressing R (press Y for the usual kunai spread)
 --OX: [planned: Skullcrush buffed to do extra damage like it's supposed to]
@@ -660,21 +663,28 @@ function lx_remove_minimum_swim_distance(e)
 	end
 end
 swimdash_frames = -1
+was_swimdashing = false
 function lx_infinite_swimdash(e, require_overdrive)
 	if e then
 		if drastic.get_ds_memory_arm9_8(adr_model) == 5 then
 			if drastic.get_ds_memory_arm9_8(adr_dash_frames_remaining-1) == 20 then --if swimdashing
 				if swimdash_frames == -1 then
 					swimdash_frames = 27
+					was_swimdashing = true
 				elseif swimdash_frames > -1 and swimdash_frames <= 27 then
 					swimdash_frames = swimdash_frames - 1
 				end
 			else
-				swimdash_frames = 0
+				if was_swimdashing then
+					was_swimdashing = false
+				end
+				if swimdash_frames ~= 0 then
+					swimdash_frames = 0
+				end
 			end
 			if drastic.get_ds_memory_arm9_8(adr_dash_frames_remaining-1) == 20 and ((require_overdrive and (drastic.get_ds_memory_arm9_8(adr_overdrive) == 65 or drastic.get_ds_memory_arm9_8(adr_overdrive) == 67) or not require_overdrive)) then
 				drastic.set_ds_memory_arm9_8(adr_dash_frames_remaining, 30)
-			else
+			elseif was_swimdashing then
 				drastic.set_ds_memory_arm9_8(adr_dash_frames_remaining, swimdash_frames)
 			end
 		end
@@ -689,7 +699,7 @@ function hx_infinite_airdash(e, require_overdrive)
 			elseif continuous_overdrive == true and (drastic.get_ds_memory_arm9_8(adr_grounded_state) == 1 or ((require_overdrive and (drastic.get_ds_memory_arm9_8(adr_overdrive) == 65 or drastic.get_ds_memory_arm9_8(adr_overdrive) == 67) or not require_overdrive))) then 
 				continuous_overdrive = false --false if you land or if overdrive is disabled at any point in the air
 			end
-			if drastic.get_ds_memory_arm9_8(adr_grounded_state) == 1 and ((require_overdrive and (drastic.get_ds_memory_arm9_8(adr_overdrive) == 65 or drastic.get_ds_memory_arm9_8(adr_overdrive) == 67) or not require_overdrive)) and drastic.get_ds_memory_arm9_8(adr_dash_frames_remaining) == 2 then
+			if drastic.get_ds_memory_arm9_8(adr_grounded_state) == 1 and ((require_overdrive and (drastic.get_ds_memory_arm9_8(adr_overdrive) == 65 or drastic.get_ds_memory_arm9_8(adr_overdrive) == 67) or not require_overdrive)) and (drastic.get_ds_memory_arm9_8(adr_dash_frames_remaining-1) == 12 or drastic.get_ds_memory_arm9_8(adr_dash_frames_remaining-1) == 20) and drastic.get_ds_memory_arm9_8(adr_dash_frames_remaining) == 2 then
 				drastic.set_ds_memory_arm9_8(adr_dash_frames_remaining, 3)
 			end
 			if continuous_overdrive and drastic.get_ds_memory_arm9_8(adr_dash_frames_remaining-1) == 4 then
